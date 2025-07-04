@@ -45,9 +45,9 @@ class Symbol extends DisplayObjectContainer {
     private var _composedFrame:Int;
     private var _layers:Sprite;
     private var _bitmap:Image;
-    private var _color:UInt;
     private var _numFrames:Int;
     private var _numLayers:Int;
+    private var _savedColor:UInt;
     private var _frameLabels:Array<FrameLabel>;
     private var _colorTransform:ColorMatrixFilter;
     
@@ -66,7 +66,7 @@ class Symbol extends DisplayObjectContainer {
         _type = SymbolType.GRAPHIC;
         _loopMode = LoopMode.LOOP;
         _firstFrame = 0;
-        _color = 0xFFFFFF;
+        _savedColor = 0xFFFFFF;
         _colorTransform = new ColorMatrixFilter();
         createLayers();
     }
@@ -133,7 +133,6 @@ class Symbol extends DisplayObjectContainer {
             }
             newSymbol.instanceName = instanceName;
             newSymbol.setTransformationMatrix(elementData.matrix3D);
-            newSymbol.setColor(elementData.color, _color);
             newSymbol.setBitmap(elementData.bitmap);
             newSymbol.setLoop(elementData.loop);
             newSymbol.setType(elementData.symbolType);
@@ -144,6 +143,9 @@ class Symbol extends DisplayObjectContainer {
                 else if (newSymbol.loopMode == LoopMode.LOOP) newSymbol.currentFrame = (_firstFrame + frameAge) % newSymbol._numFrames;
                 else newSymbol.currentFrame = _firstFrame + frameAge;
             }
+
+            // set the color after Symbol is built so the method can recursivly access to all children
+            newSymbol.setColor(elementData.color);
         }
 
         var numObsoleteSymbols:Int = layer.numChildren - numElements;
@@ -185,8 +187,6 @@ class Symbol extends DisplayObjectContainer {
                 _bitmap.x = data.decomposedMatrix.position.x;
                 _bitmap.y = data.decomposedMatrix.position.y;
             }
-            _bitmap.color = _color;
-
         } else if (_bitmap != null) {
             _bitmap.x = _bitmap.y = 0;
             _bitmap.removeFromParent();
@@ -200,7 +200,8 @@ class Symbol extends DisplayObjectContainer {
         transformationMatrix = sMatrix;
     }
 
-    private function setColor(data:ColorData, inheritedColor:UInt):Void {
+    private function setColor(data:ColorData):Void {
+        var color:UInt = 0xFFFFFF;
         if (data != null) {
             var mode:String = data.mode;
             var ALPHA_MODES = ["Alpha", "CA", "Advanced", "AD"];
@@ -211,7 +212,7 @@ class Symbol extends DisplayObjectContainer {
                 _colorTransform.adjustBrightness(data.brightness);
                 filter = _colorTransform;
             } else if (mode == "Tint" || mode == "T") {
-                _color = Std.parseInt("0x" + data.tintColor.substr(1));
+                color = Std.parseInt("0x" + data.tintColor.substr(1));
                 // Alternative way to change color but comes with more drawcalls
                 /*_colorTransform.tint(Std.parseInt("0x" + data.tintColor.substr(1)), data.tintMultiplier);
                 filter = _colorTransform;*/
@@ -219,11 +220,26 @@ class Symbol extends DisplayObjectContainer {
                 var redValue:Int = Math.round(data.redOffset + data.redMultiplier * 255);
                 var greenValue:Int = Math.round(data.greenOffset + data.greenMultiplier * 255);
                 var blueValue:Int = Math.round(data.blueOffset + data.blueMultiplier * 255);
-                _color = Color.rgb(redValue, greenValue, blueValue);
-            } 
-        } else {
-            _color = inheritedColor;
-            alpha = 1.0;
+                color = Color.rgb(redValue, greenValue, blueValue);
+            }
+        } else alpha = 1.0;
+
+        if (color != _savedColor) {
+            _savedColor = color;
+            applyColor(_savedColor);
+        }
+    }
+
+    private function applyColor(color:UInt):Void {
+        if (_bitmap != null) _bitmap.color = color;
+        var currentLayer:Sprite;
+        var currentSymbol:Symbol;
+        for (i in 0...numLayers) {
+            currentLayer = getLayer(i);
+            for (j in 0...currentLayer.numChildren) {
+                currentSymbol = cast(currentLayer.getChildAt(j), Symbol);
+                currentSymbol.applyColor(color);
+            }
         }
     }
 
