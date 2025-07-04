@@ -1,7 +1,14 @@
 package starling.extensions.animate;
 
-import starling.utils.Color;
+import flash.errors.ArgumentError;
+import flash.errors.Error;
+import flash.display.FrameLabel;
+import flash.geom.Matrix;
 import openfl.display.Bitmap;
+import openfl.display.FrameLabel;
+import starling.display.DisplayObjectContainer;
+import starling.display.Image;
+import starling.display.Sprite;
 import starling.extensions.animate.AnimationAtlasData.SymbolInstanceData;
 import starling.extensions.animate.AnimationAtlasData.ColorData;
 import starling.extensions.animate.AnimationAtlasData.Matrix3DData;
@@ -9,54 +16,45 @@ import starling.extensions.animate.AnimationAtlasData.ElementData;
 import starling.extensions.animate.AnimationAtlasData.LayerFrameData;
 import starling.extensions.animate.AnimationAtlasData.LayerData;
 import starling.extensions.animate.AnimationAtlasData.SymbolData;
-import openfl.display.FrameLabel;
-import flash.errors.ArgumentError;
-import flash.errors.Error;
-import flash.display.FrameLabel;
-import flash.geom.Matrix;
-import starling.display.DisplayObjectContainer;
-import starling.display.Image;
-import starling.display.Sprite;
 import starling.filters.ColorMatrixFilter;
 import starling.textures.Texture;
+import starling.utils.Color;
 import starling.utils.MathUtil;
 
-class Symbol extends DisplayObjectContainer
-{
-    public var currentLabel(get, never) : String;
-    public var currentFrame(get, set) : Int;
-    public var firstFrame(get, set) : Int;
-    public var type(get, set) : String;
-    public var loopMode(get, set) : String;
-    public var symbolName(get, never) : String;
-    public var instanceName(get, set) : String;
-    public var numLayers(get, never) : Int;
-    public var numFrames(get, never) : Int;
+class Symbol extends DisplayObjectContainer {
+    public var currentLabel(get, never):String;
+    public var currentFrame(get, set):Int;
+    public var firstFrame(get, set):Int;
+    public var type(get, set):String;
+    public var loopMode(get, set):String;
+    public var symbolName(get, never):String;
+    public var instanceName(get, set):String;
+    public var numLayers(get, never):Int;
+    public var numFrames(get, never):Int;
 
-    public static inline var BITMAP_SYMBOL_NAME : String = "___atlas_sprite___";
+    public static inline var BITMAP_SYMBOL_NAME:String = "___atlas_sprite___";
     
-    private var _data : SymbolData;
-    private var _atlas : AnimationAtlas;
-    private var _symbolName : String;
-    private var _instanceName : String;
-    private var _type : String;
-    private var _loopMode : String;
-    private var _currentFrame : Int;
-    private var _firstFrame : Int;
-    private var _composedFrame : Int;
-    private var _layers : Sprite;
-    private var _bitmap : Image;
-    private var _color : UInt;
-    private var _numFrames : Int;
-    private var _numLayers : Int;
-    private var _frameLabels : Array<FrameLabel>;
+    private var _data:SymbolData;
+    private var _atlas:AnimationAtlas;
+    private var _symbolName:String;
+    private var _instanceName:String;
+    private var _type:String;
+    private var _loopMode:String;
+    private var _currentFrame:Int;
+    private var _firstFrame:Int;
+    private var _composedFrame:Int;
+    private var _layers:Sprite;
+    private var _bitmap:Image;
+    private var _color:UInt;
+    private var _numFrames:Int;
+    private var _numLayers:Int;
+    private var _frameLabels:Array<FrameLabel>;
     private var _colorTransform:ColorMatrixFilter;
     
-    private static var sMatrix : Matrix = new Matrix();
+    private static var sMatrix:Matrix = new Matrix();
     
     @:allow(starling.extensions.animate)
-    private function new(data : SymbolData, atlas : AnimationAtlas)
-    {
+    private function new(data:SymbolData, atlas:AnimationAtlas) {
         super();
         _data = data;
         _atlas = atlas;
@@ -73,8 +71,7 @@ class Symbol extends DisplayObjectContainer
         createLayers();
     }
 
-    public function reset():Void
-    {
+    public function reset():Void {
         sMatrix.identity();
         transformationMatrix = sMatrix;
         alpha = 1.0;
@@ -85,40 +82,29 @@ class Symbol extends DisplayObjectContainer
     /** To be called whenever sufficient time for one frame has passed. Does not necessarily
          *  move 'currentFrame' ahead - depending on the 'loop' mode. MovieClips all move
          *  forward, though (recursively). */
-    public function nextFrame():Void
-    {
-        if (_loopMode != LoopMode.SINGLE_FRAME)
-            currentFrame += 1;
-
+    public function nextFrame():Void {
+        if (_loopMode != LoopMode.SINGLE_FRAME) currentFrame += 1;
         nextFrame_MovieClips();
     }
 
     /** Moves all movie clips ahead one frame, recursively. */
-    public function nextFrame_MovieClips():Void
-    {
-        if (_type == SymbolType.MOVIE_CLIP)
-            currentFrame += 1;
+    public function nextFrame_MovieClips():Void {
+        if (_type == SymbolType.MOVIE_CLIP) currentFrame += 1;
 
-        for (l in 0..._numLayers)
-        {
+        for (l in 0..._numLayers) {
             var layer:Sprite = getLayer(l);
             var numElements:Int = layer.numChildren;
 
-            for (e in 0...numElements)
-                cast(layer.getChildAt(e),Symbol).nextFrame_MovieClips();
+            for (e in 0...numElements) cast(layer.getChildAt(e),Symbol).nextFrame_MovieClips();
         }
     }
 
-    public function update():Void
-    {
-        for (i in 0..._numLayers)
-            updateLayer(i);
-
+    public function update():Void {
+        for (i in 0..._numLayers) updateLayer(i);
         _composedFrame = _currentFrame;
     }
 
-    private function updateLayer(layerIndex:Int):Void
-    {
+    private function updateLayer(layerIndex:Int):Void {
         var layer:Sprite = getLayer(layerIndex);
         var frameData:LayerFrameData = getFrameData(layerIndex, _currentFrame);
         var elements:Array<ElementData> = frameData != null ? frameData.elements : null;
@@ -126,8 +112,7 @@ class Symbol extends DisplayObjectContainer
 
         var oldSymbol:Symbol = null;
 
-        for (i in 0...numElements)
-        {
+        for (i in 0...numElements) {
             var elementData:SymbolInstanceData = elements[i].symbolInstance;
             oldSymbol = layer.numChildren > i ? cast(layer.getChildAt(i),Symbol) : null;
             var newSymbol:Symbol = null;
@@ -137,10 +122,8 @@ class Symbol extends DisplayObjectContainer
             if (!_atlas.hasSymbol(symbolName)) symbolName = BITMAP_SYMBOL_NAME;
 
             if (oldSymbol != null && oldSymbol._symbolName == symbolName) newSymbol = oldSymbol;
-            else
-            {
-                if (oldSymbol != null)
-                {
+            else {
+                if (oldSymbol != null) {
                     oldSymbol.removeFromParent();
                     _atlas.putSymbol(oldSymbol);
                 }
@@ -155,63 +138,47 @@ class Symbol extends DisplayObjectContainer
             newSymbol.setLoop(elementData.loop);
             newSymbol.setType(elementData.symbolType);
 
-            if (newSymbol.type == SymbolType.GRAPHIC)
-            {
+            if (newSymbol.type == SymbolType.GRAPHIC) {
                 var frameAge:Int = Std.int(_currentFrame - frameData.index);
-
-                if (newSymbol.loopMode == LoopMode.SINGLE_FRAME)
-                    newSymbol.currentFrame = newSymbol.firstFrame;
-                else if (newSymbol.loopMode == LoopMode.LOOP)
-                    newSymbol.currentFrame = (_firstFrame + frameAge) % newSymbol._numFrames;
-                else
-                    newSymbol.currentFrame = _firstFrame + frameAge;
+                if (newSymbol.loopMode == LoopMode.SINGLE_FRAME) newSymbol.currentFrame = newSymbol.firstFrame;
+                else if (newSymbol.loopMode == LoopMode.LOOP) newSymbol.currentFrame = (_firstFrame + frameAge) % newSymbol._numFrames;
+                else newSymbol.currentFrame = _firstFrame + frameAge;
             }
         }
 
         var numObsoleteSymbols:Int = layer.numChildren - numElements;
 
-        for (i in 0...numObsoleteSymbols)
-        {
+        for (i in 0...numObsoleteSymbols) {
             oldSymbol = cast(layer.removeChildAt(numElements), Symbol);
             _atlas.putSymbol(oldSymbol);
         }
     }
 
-    private function createLayers():Void
-    {
-        if (_layers != null)
-            throw new Error("Method must only be called once");
+    private function createLayers():Void {
+        if (_layers != null) throw new Error("Method must only be called once");
 
         _layers = new Sprite();
         addChild(_layers);
 
-        for (i in 0..._numLayers)
-        {
+        for (i in 0..._numLayers) {
             var layer:Sprite = new Sprite();
             layer.name = getLayerData(i).layerName;
             _layers.addChild(layer);
         }
     }
 
-    public function setBitmap(data:Dynamic):Void
-    {
-        if (data != null)
-        {
+    public function setBitmap(data:Dynamic):Void {
+        if (data != null) {
             var texture:Texture = _atlas.getTexture(data.name);
-
-            if (_bitmap != null)
-            {
+            if (_bitmap != null) {
                 _bitmap.texture = texture;
                 _bitmap.readjustSize();
-            }
-            else
-            {
+            } else {
                 _bitmap = _atlas.getImage(texture);
                 addChild(_bitmap);
             }
 
-            if (data.position != null)
-            {
+            if (data.position != null) {
                 _bitmap.x = data.position.x;
                 _bitmap.y = data.position.y;
             } else if (data.decomposedMatrix != null && data.decomposedMatrix.position != null) {
@@ -219,9 +186,8 @@ class Symbol extends DisplayObjectContainer
                 _bitmap.y = data.decomposedMatrix.position.y;
             }
             _bitmap.color = _color;
-        }
-        else if (_bitmap != null)
-        {
+
+        } else if (_bitmap != null) {
             _bitmap.x = _bitmap.y = 0;
             _bitmap.removeFromParent();
             _atlas.putImage(_bitmap);
@@ -229,18 +195,15 @@ class Symbol extends DisplayObjectContainer
         }
     }
 
-    private function setTransformationMatrix(data:Matrix3DData):Void
-    {
+    private function setTransformationMatrix(data:Matrix3DData):Void {
         sMatrix.setTo(data.m00, data.m01, data.m10, data.m11, data.m30, data.m31);
         transformationMatrix = sMatrix;
     }
 
-    private function setColor(data:ColorData, inheritedColor:UInt):Void
-    {
-        if (data != null)
-        {
+    private function setColor(data:ColorData, inheritedColor:UInt):Void {
+        if (data != null) {
             var mode:String = data.mode;
-            var ALPHA_MODES = ["Alpha", "Advanced", "AD"];
+            var ALPHA_MODES = ["Alpha", "CA", "Advanced", "AD"];
             alpha = (ALPHA_MODES.indexOf(mode) >= 0) ? data.alphaMultiplier : 1.0;
 
             if (mode == "Brightness" || mode == "CBRT") {
@@ -258,70 +221,53 @@ class Symbol extends DisplayObjectContainer
                 var blueValue:Int = Math.round(data.blueOffset + data.blueMultiplier * 255);
                 _color = Color.rgb(redValue, greenValue, blueValue);
             } 
-        }
-        else
-        {
+        } else {
             _color = inheritedColor;
             alpha = 1.0;
         }
     }
 
-    private function setLoop(data:String):Void
-    {
-        if (data != null)
-            _loopMode = LoopMode.parse(data);
-        else
-            _loopMode = LoopMode.LOOP;
+    private function setLoop(data:String):Void {
+        if (data != null) _loopMode = LoopMode.parse(data);
+        else _loopMode = LoopMode.LOOP;
     }
 
-    private function setType(data:String):Void
-    {
+    private function setType(data:String):Void {
         if (data != null) _type = SymbolType.parse(data);
     }
 
-    private function setFirstFrame(data:Int):Void
-    {
+    private function setFirstFrame(data:Int):Void {
         _firstFrame = data;
     }
 
-    private function getNumFrames() : Int
-    {
-        var numFrames : Int = 0;
+    private function getNumFrames():Int {
+        var numFrames:Int = 0;
 
-        for (i in 0..._numLayers)
-        {
+        for (i in 0..._numLayers) {
             var frameDates:Array<LayerFrameData> = getLayerData(i).frames;
             var numFrameDates:Int = frameDates != null ? frameDates.length : 0;
             var layerNumFrames:Int = numFrameDates != 0 ? frameDates[0].index : 0;
 
-            for (j in 0...numFrameDates)
-                layerNumFrames += frameDates[j].duration;
-
-            if (layerNumFrames > numFrames)
-                numFrames = layerNumFrames;
+            for (j in 0...numFrameDates) layerNumFrames += frameDates[j].duration;
+            if (layerNumFrames > numFrames) numFrames = layerNumFrames;
         }
 
         return numFrames == 0 ? 1 : numFrames;
     }
 
-    private function getFrameLabels():Array<FrameLabel>
-    {
+    private function getFrameLabels():Array<FrameLabel> {
         var labels:Array<FrameLabel> = [];
 
-        for (i in 0..._numLayers)
-        {
+        for (i in 0..._numLayers) {
             var frameDates:Array<LayerFrameData> = getLayerData(i).frames;
             var numFrameDates:Int = frameDates != null ? frameDates.length : 0;
 
-            for (j in 0...numFrameDates)
-            {
+            for (j in 0...numFrameDates) {
                 var frameData:LayerFrameData = frameDates[j];
                 //if ("name" in frameData)
                 //todo check this
-                if (frameData.name != null)
-                {
-                    labels[labels.length] = new FrameLabel(frameData.name, frameData.index);
-                }else{
+                if (frameData.name != null) labels[labels.length] = new FrameLabel(frameData.name, frameData.index);
+                else {
                     //trace(frameData);
                 }
             }
@@ -332,31 +278,25 @@ class Symbol extends DisplayObjectContainer
         return labels;
     }
 	
-	function sortLabels(i1:FrameLabel, i2:FrameLabel) : Int{
+	function sortLabels(i1:FrameLabel, i2:FrameLabel):Int{
 		var f1 = i1.frame;
 		var f2 = i2.frame;
-		if (f1 < f2){
-			return -1;
-		}else if (f1 > f2){
-			return 1;
-		}else{
-			return 0;
-		}
+        var res:Int = 0;
+		if (f1 < f2) res = -1;
+		else if (f1 > f2) res = 1;
+		return res;
 	}
 
-    private function getLayer(layerIndex:Int):Sprite
-    {
+    private function getLayer(layerIndex:Int):Sprite {
         return cast(_layers.getChildAt(layerIndex), Sprite);
     }
 
-    public function getNextLabel(afterLabel:String=null):String
-    {
+    public function getNextLabel(afterLabel:String=null):String {
         var numLabels:Int = _frameLabels.length;
         var startFrame:Int = getFrame(afterLabel == null ? currentLabel : afterLabel);
         //todo check getFrame
 
-        for (i in 0...numLabels)
-        {
+        for (i in 0...numLabels) {
             var label:FrameLabel = _frameLabels[i];
             if (label.frame > startFrame)
             return label.name;
@@ -365,139 +305,106 @@ class Symbol extends DisplayObjectContainer
         return _frameLabels != null ? _frameLabels[0].name : null; // wrap around
     }
 
-    private function get_currentLabel() : String
-    {
+    private function get_currentLabel():String {
         var numLabels:Int = _frameLabels.length;
         var highestLabel:FrameLabel = numLabels != 0 ? _frameLabels[0] : null;
 
-        for (i in 0...numLabels)
-        {
+        for (i in 0...numLabels) {
             var label:FrameLabel = _frameLabels[i];
-
-            if (label.frame <= _currentFrame)
-                highestLabel = label;
-            else
-                break;
+            if (label.frame <= _currentFrame) highestLabel = label;
+            else break;
         }
 
         return highestLabel != null ? highestLabel.name : null;
     }
     
-    public function getFrame(label : String) : Int
-    {
+    public function getFrame(label:String):Int {
         var numLabels:Int = _frameLabels.length;
-        for (i in 0...numLabels)
-        {
+        for (i in 0...numLabels) {
             var frameLabel:FrameLabel = _frameLabels[i];
-            if (frameLabel.name == label)
-                return frameLabel.frame;
+            if (frameLabel.name == label) return frameLabel.frame;
         }
         return -1;
     }
     
-    private function get_currentFrame() : Int
-    {
+    private function get_currentFrame():Int {
         return _currentFrame;
     }
 
-    private function set_currentFrame(value : Int) : Int
-    {
-        while (value < 0)
-            value += _numFrames;
+    private function set_currentFrame(value:Int):Int {
+        while (value < 0) value += _numFrames;
 
-        if (_loopMode == LoopMode.PLAY_ONCE)
-            _currentFrame = Std.int(MathUtil.clamp(value, 0, _numFrames - 1));
-        else
-            _currentFrame = Std.int(Math.abs(value % _numFrames));
+        if (_loopMode == LoopMode.PLAY_ONCE) _currentFrame = Std.int(MathUtil.clamp(value, 0, _numFrames - 1));
+        else _currentFrame = Std.int(Math.abs(value % _numFrames));
 
-        if (_composedFrame != _currentFrame)
-            update();
+        if (_composedFrame != _currentFrame) update();
         return value;
     }
 
-    private function get_firstFrame() : Int
-    {
+    private function get_firstFrame():Int {
         return _firstFrame;
     }
 
-    private function set_firstFrame(value : Int) : Int
-    {
-        while (value < 0)
-            value += _numFrames;
+    private function set_firstFrame(value:Int):Int {
+        while (value < 0) value += _numFrames;
 
         _firstFrame = value;
         return value;
     }
     
-    private function get_type() : String
-    {
+    private function get_type():String {
         return _type;
     }
-    private function set_type(value : String) : String
-    {
-        if (SymbolType.isValid(value))
-            _type = value;
-        else
-            throw new ArgumentError("Invalid symbol type: " + value);
+    private function set_type(value:String):String {
+        if (SymbolType.isValid(value)) _type = value;
+        else throw new ArgumentError("Invalid symbol type: " + value);
         return value;
     }
     
-    private function get_loopMode() : String
-    {
+    private function get_loopMode():String {
         return _loopMode;
     }
-    private function set_loopMode(value : String) : String
-    {
-        if (LoopMode.isValid(value))
-            _loopMode = value;
-        else
-            throw new ArgumentError("Invalid loop mode: " + value);
+    private function set_loopMode(value:String):String {
+        if (LoopMode.isValid(value)) _loopMode = value;
+        else throw new ArgumentError("Invalid loop mode: " + value);
         return value;
     }
     
-    private function get_symbolName() : String
-    {
+    private function get_symbolName():String {
         return _symbolName;
     }
-    private function get_instanceName() : String
-    {
+
+    private function get_instanceName():String {
         return _instanceName;
     }
-    private function set_instanceName(value : String) : String
-    {
+    private function set_instanceName(value:String):String {
         return _instanceName = value;
     }
-    private function get_numLayers() : Int
-    {
+
+    private function get_numLayers():Int {
         return _numLayers;
     }
-    private function get_numFrames() : Int
-    {
+
+    private function get_numFrames():Int {
         return _numFrames;
     }
     
     // data access
     
-    private function getLayerData(layerIndex : Int) : LayerData
-    {
+    private function getLayerData(layerIndex:Int):LayerData {
         return _data.timeline.layers[layerIndex];
     }
 
-    private function getFrameData(layerIndex:Int, frameIndex:Int):LayerFrameData
-    {
+    private function getFrameData(layerIndex:Int, frameIndex:Int):LayerFrameData {
         var frames:Array<LayerFrameData> = getLayerData(layerIndex).frames;
         var numFrames:Int = frames.length;
 
-        for (i in 0...numFrames)
-        {
+        for (i in 0...numFrames) {
             var frame:LayerFrameData = frames[i];
-            if (frame.index <= frameIndex && frame.index + frame.duration > frameIndex)
-                return frame;
+            if (frame.index <= frameIndex && frame.index + frame.duration > frameIndex) return frame;
         }
-
         return null;
     }
 
     public function getLayers():Sprite {return _layers;}
 }
-

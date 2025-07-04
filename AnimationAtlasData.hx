@@ -1,7 +1,6 @@
 package starling.extensions.animate;
 
-typedef AnimationAtlasData =
-{
+typedef AnimationAtlasData = {
     ?animation:SymbolData,
     ?symbolDictionary:{
         symbols:Array<SymbolData>
@@ -25,8 +24,7 @@ typedef AnimationAtlasData =
     }
 }
 
-typedef SpriteData =
-{
+typedef SpriteData = {
     name: String,
     x:Int,
     y:Int,
@@ -35,43 +33,37 @@ typedef SpriteData =
     rotated:Bool
 }
 
-typedef SymbolData =
-{
+typedef SymbolData = {
     ?name: String,
     symbolName: String,
     ?timeline: SymbolTimelineData
 }
 
-typedef SymbolTimelineData =
-{
+typedef SymbolTimelineData = {
     ?sortedForRender:Bool,
     layers: Array<LayerData>
 }
 
-typedef LayerData =
-{
+typedef LayerData = {
     layerName: String,
     frames: Array<LayerFrameData>,
     FrameMap: Map<Int, LayerFrameData>
 }
 
-typedef LayerFrameData =
-{
+typedef LayerFrameData = {
     index: Int,
     ?name: String,
     duration: Int,
     elements:Array<ElementData>
 }
 
-typedef ElementData =
-{
+typedef ElementData = {
     ?atlasSpriteInstance:Dynamic,
     ?symbolInstance: SymbolInstanceData
 
 }
 
-typedef SymbolInstanceData =
-{
+typedef SymbolInstanceData = {
     symbolName: String,
     instanceName: String,
     bitmap: Dynamic, //todo: fix this
@@ -85,8 +77,7 @@ typedef SymbolInstanceData =
     firstFrame:Int,
 }
 
-typedef ColorData =
-{
+typedef ColorData = {
     mode: String,
 
     ?alphaMultiplier: Float,
@@ -103,25 +94,19 @@ typedef ColorData =
 }
 
 
-typedef PointData =
-{
-    x:Int,
-    y:Int
-}
+typedef PointData = {x:Int, y:Int}
 
-typedef Matrix3DData =
-{
+typedef Matrix3DData = {
     m00: Float, m01: Float, m02: Float, m03: Float,
     m10: Float, m11: Float, m12: Float, m13: Float,
     m20: Float, m21: Float, m22: Float, m23: Float,
     m30: Float, m31: Float, m32: Float, m33: Float
 }
 
-typedef Decomposed3DData =
-{
+typedef Decomposed3DData = {
     position: VectorData,
     rotation: VectorData,
     scaling: VectorData
 }
 
-typedef VectorData = { x:Float, y:Float, z:Float }
+typedef VectorData = {x:Float, y:Float, z:Float}
