@@ -1,7 +1,6 @@
 package starling.extensions.animate;
 
 import StringTools;
-import Type;
 import flash.geom.Rectangle;
 import openfl.Vector;
 import starling.assets.AssetFactoryHelper;
@@ -12,6 +11,9 @@ import starling.extensions.animate.AnimationAtlas;
 import starling.textures.Texture;
 import starling.textures.TextureAtlas;
 import starling.utils.Pool;
+
+import Type;
+
 
 class AssetManagerEx extends AssetManager {
     private static var sNames:Vector<String> = new Vector<String>();
@@ -34,7 +36,7 @@ class AssetManagerEx extends AssetManager {
     /** Returns all animation atlas names that start with a certain string, sorted alphabetically.
          *  If you pass an <code>out</code>-vector, the names will be added to that vector. */
     public function getAnimationAtlasNames(prefix:String="", out:Vector<String>=null):Vector<String> {
-     return getAssetNames(AnimationAtlas.ASSET_TYPE, prefix, true, out);
+        return getAssetNames(AnimationAtlas.ASSET_TYPE, prefix, true, out);
     }
 
     public function createAnimation(name:String):Animation {
@@ -58,9 +60,8 @@ class AssetManagerEx extends AssetManager {
         var defaultName:String = super.getNameFromUrl(url);
         var defaultExt:String = super.getExtensionFromUrl(url);
 
-        var res:String = defaultName;
-        if (defaultName.indexOf("spritemap") != -1 && (defaultExt == "png" || defaultExt == "atf")) res = AnimationAtlasFactory.getName(url, defaultName, false);
-        return defaultName;
+        if (defaultName.indexOf("spritemap") != -1 && (defaultExt == "png" || defaultExt == "atf")) return AnimationAtlasFactory.getName(url, defaultName, false);
+        else return defaultName;
     }
 }
 
